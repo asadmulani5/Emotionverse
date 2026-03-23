@@ -1,13 +1,5 @@
 # text_model.py
 # Detects emotion from text using DistilBERT.
-#
-# Why this approach?
-# Training a model from scratch needs thousands of hours and labeled data.
-# Instead we use a model already trained on emotion data from HuggingFace.
-# We just load it and call it — this is called inference.
-#
-# Model: bhadresh-savani/distilbert-base-uncased-emotion
-# Emotions it knows: sadness, joy, love, anger, fear, surprise
 
 from transformers import pipeline
 
