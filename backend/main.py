@@ -5,6 +5,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import socketio
+from models.text_model import load_text_model, predict_text_emotion
 
 # FastAPI handles normal HTTP requests
 app = FastAPI(title="EmotionVerse", version="1.0")
@@ -15,6 +16,9 @@ sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
 
 # Merge both into one app — single server, single port
 socket_app = socketio.ASGIApp(sio, app)
+@app.on_event("startup")
+async def startup():
+    load_text_model()
 
 # Without this, the browser blocks React (port 3000)
 # from talking to Python (port 8000) — security rule
@@ -26,6 +30,14 @@ app.add_middleware(
 )
 
 # ── HTTP ──────────────────────────────────────────────────
+
+
+@app.post("/predict/text")
+def predict_text(payload: dict):
+    text = payload.get("text", "")
+    if not text:
+        return {"error": "no text provided"}
+    return predict_text_emotion(text)
 
 @app.get("/")
 def health_check():
