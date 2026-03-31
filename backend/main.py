@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import socketio
 from models.text_model import load_text_model, predict_text_emotion
+from models.face_model import load_face_model, predict_face_emotion
 
 app = FastAPI(title="EmotionVerse", version="1.0")
 
@@ -14,6 +15,7 @@ socket_app = socketio.ASGIApp(sio, app)
 @app.on_event("startup")
 async def startup():
     load_text_model()
+    load_face_model()
 
 
 app.add_middleware(
@@ -32,6 +34,13 @@ def predict_text(payload: dict):
     if not text:
         return {"error": "no text provided"}
     return predict_text_emotion(text)
+
+@app.post("/predict/face")
+def predict_face(payload: dict):
+    image_b64 = payload.get("image", "")
+    if not image_b64:
+        return {"error": "no image provided"}
+    return predict_face_emotion(image_b64)
 
 @app.get("/")
 def health_check():
