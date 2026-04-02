@@ -7,4 +7,5 @@ __pycache__/
 *.h5
 *.pkl
 .DS_Store
-node_modules/
+node_modules/*.jpg
+*.jpeg
