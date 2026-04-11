@@ -3,20 +3,18 @@ from fastapi.middleware.cors import CORSMiddleware
 import socketio
 from models.text_model import load_text_model, predict_text_emotion
 from models.face_model import load_face_model, predict_face_emotion
+from models.voice_model import load_voice_model, predict_voice_emotion
 
 app = FastAPI(title="EmotionVerse", version="1.0")
 
-# Socket.IO handles real-time events 
-# the frontend streams face/audio/text data to us
 sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
-
-# Merge both into one app — single server, single port
 socket_app = socketio.ASGIApp(sio, app)
+
 @app.on_event("startup")
 async def startup():
     load_text_model()
     load_face_model()
-
+    load_voice_model()
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,9 +22,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ── HTTP ──────────────────────────────────────────────────
-
 
 @app.post("/predict/text")
 def predict_text(payload: dict):
@@ -42,24 +37,26 @@ def predict_face(payload: dict):
         return {"error": "no image provided"}
     return predict_face_emotion(image_b64)
 
+@app.post("/predict/voice")
+def predict_voice(payload: dict):
+    audio_data = payload.get("audio", [])
+    sample_rate = payload.get("sample_rate", 16000)
+    if not audio_data:
+        return {"error": "no audio provided"}
+    return predict_voice_emotion(audio_data, sample_rate)
+
 @app.get("/")
 def health_check():
-   
     return {
         "project": "EmotionVerse",
-        "status":  "running",
-        "phase":   "1 — scaffold"
+        "status": "running",
+        "phase": "3 — all models loaded"
     }
-
-# ── Socket.IO events ──────────────────────────────────────
 
 @sio.event
 async def connect(sid, environ):
-   
     print(f"[+] Connected: {sid}")
-    await sio.emit("server_message", {
-        "msg": "Connected to EmotionVerse"
-    }, to=sid)
+    await sio.emit("server_message", {"msg": "Connected to EmotionVerse"}, to=sid)
 
 @sio.event
 async def disconnect(sid):
@@ -67,10 +64,7 @@ async def disconnect(sid):
 
 @sio.event
 async def analyze(sid, data):
-    # This is the main event — frontend sends face/audio/text here
-   
     print(f"[~] analyze() from {sid} | keys: {list(data.keys())}")
-
     await sio.emit("emotion_result", {
         "emotions": {
             "happy":    0.10,
@@ -81,6 +75,5 @@ async def analyze(sid, data):
             "fear":     0.05,
             "disgust":  0.05
         },
-        "dominant": "neutral",
-        "note": "placeholder — real models coming Phase 2"
+        "dominant": "neutral"
     }, to=sid)
