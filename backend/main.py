@@ -89,16 +89,16 @@ async def disconnect(sid):
 
 @sio.event
 async def analyze(sid, data):
-    print(f"[~] analyze() from {sid} | keys: {list(data.keys())}")
+    image_b64 = data.get("image", "")
+    
+    face_result = predict_face_emotion(image_b64) if image_b64 else {}
+    emotions = face_result.get("emotions", {
+        "happy": 0.1, "sad": 0.05, "angry": 0.05,
+        "neutral": 0.6, "surprise": 0.1, "fear": 0.05, "disgust": 0.05
+    })
+    dominant = face_result.get("dominant", "neutral")
+
     await sio.emit("emotion_result", {
-        "emotions": {
-            "happy":    0.10,
-            "sad":      0.05,
-            "angry":    0.05,
-            "neutral":  0.60,
-            "surprise": 0.10,
-            "fear":     0.05,
-            "disgust":  0.05
-        },
-        "dominant": "neutral"
+        "emotions": emotions,
+        "dominant": dominant
     }, to=sid)
