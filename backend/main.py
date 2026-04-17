@@ -4,6 +4,7 @@ import socketio
 from models.text_model import load_text_model, predict_text_emotion
 from models.face_model import load_face_model, predict_face_emotion
 from models.voice_model import load_voice_model, predict_voice_emotion
+from fusion import weighted_fusion
 
 app = FastAPI(title="EmotionVerse", version="1.0")
 
@@ -22,6 +23,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+def health_check():
+    return {
+        "project": "EmotionVerse",
+        "status": "running",
+        "phase": "5 — fusion engine active"
+    }
 
 @app.post("/predict/text")
 def predict_text(payload: dict):
@@ -45,12 +54,28 @@ def predict_voice(payload: dict):
         return {"error": "no audio provided"}
     return predict_voice_emotion(audio_data, sample_rate)
 
-@app.get("/")
-def health_check():
+@app.post("/predict/fusion")
+def predict_fusion(payload: dict):
+    text = payload.get("text", "")
+    image_b64 = payload.get("image", "")
+    audio_data = payload.get("audio", [])
+    sample_rate = payload.get("sample_rate", 16000)
+
+    text_result  = predict_text_emotion(text) if text else {}
+    face_result  = predict_face_emotion(image_b64) if image_b64 else {}
+    voice_result = predict_voice_emotion(audio_data, sample_rate) if audio_data else {}
+
+    fused = weighted_fusion(
+        face_result.get("emotions", {}),
+        voice_result.get("emotions", {}),
+        text_result.get("emotions", {})
+    )
+
     return {
-        "project": "EmotionVerse",
-        "status": "running",
-        "phase": "3 — all models loaded"
+        "text":  text_result,
+        "face":  face_result,
+        "voice": voice_result,
+        "fused": fused
     }
 
 @sio.event
