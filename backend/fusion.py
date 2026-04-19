@@ -1,45 +1,46 @@
-EMOTION_MAP = {
-    "anger": "angry",
-    "joy": "happy",
-    "sadness": "sad",
-    "fear": "fear",
-    "surprise": "surprise",
-    "love": "happy",
-    "disgust": "disgust",
-    "calm": "neutral",
-    "fearful": "fear",
-    "surprised": "surprise",
-    "neutral": "neutral",
-    "happy": "happy",
-    "sad": "sad",
-    "angry": "angry",
-    "disgust": "disgust",
-}
+def normalize_text_emotions(text_emotions):
+    mapping = {
+        "sadness": "sad",
+        "joy": "happy",
+        "anger": "angry",
+        "fear": "fear",
+        "surprise": "surprise",
+        "love": "happy"
+    }
 
-def normalize_emotions(raw: dict) -> dict:
     normalized = {}
-    for label, score in raw.items():
-        mapped = EMOTION_MAP.get(label.lower(), label)
-        if mapped in normalized:
-            normalized[mapped] += score
-        else:
-            normalized[mapped] = score
+
+    for key, value in text_emotions.items():
+        mapped_key = mapping.get(key, key)
+        normalized[mapped_key] = normalized.get(mapped_key, 0) + value
+
     return normalized
 
-def weighted_fusion(face: dict, voice: dict, text: dict) -> dict:
-    emotions = ["happy", "sad", "angry", "neutral", "surprise", "fear", "disgust"]
 
-    face  = normalize_emotions(face)
-    voice = normalize_emotions(voice)
-    text  = normalize_emotions(text)
+def weighted_fusion(face, voice, text):
+    # ✅ normalize text FIRST
+    text = normalize_text_emotions(text)
 
-    fused = {}
-    for emotion in emotions:
-        fused[emotion] = round(
-            (0.4 * face.get(emotion, 0)) +
-            (0.3 * voice.get(emotion, 0)) +
-            (0.3 * text.get(emotion, 0)), 4
+    final = {
+        "happy": 0,
+        "sad": 0,
+        "angry": 0,
+        "neutral": 0,
+        "surprise": 0,
+        "fear": 0,
+        "disgust": 0
+    }
+
+    for k in final.keys():
+        final[k] = (
+            0.3 * face.get(k, 0) +
+            0.7 * text.get(k, 0) +   # ✅ TEXT PRIORITY HIGH
+            0.0 * voice.get(k, 0)
         )
 
-    dominant = max(fused, key=fused.get)
-    return {"emotions": fused, "dominant": dominant}
+    dominant = max(final, key=final.get)
+
+    return {
+        "emotions": final,
+        "dominant": dominant
+    }
