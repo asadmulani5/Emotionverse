@@ -63,7 +63,6 @@ six==1.17.0
 sounddevice==0.5.5
 soundfile==0.13.1
 soxr==1.0.0
-starlette==0.37.2
 sympy==1.14.0
 threadpoolctl==3.6.0
 tokenizers==0.19.1
