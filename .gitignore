@@ -11,3 +11,7 @@ node_modules/*.jpg
 *.jpeg
 *.jpg
 *.jpeg
+
+# Editor and tool output
+.cursor/
+graphify-out/
