@@ -35,7 +35,7 @@ def predict_text_emotion(text: str) -> dict:
         return {"error": "model not loaded"}
 
     # Run the text through DistilBERT
-    raw = _classifier(text)[0]
+    raw = _classifier(text, truncation=True, max_length=512)[0]
 
     # raw looks like: [{"label": "joy", "score": 0.95}, ...]
     # We convert it to a clean dict: { "joy": 0.95, ... }

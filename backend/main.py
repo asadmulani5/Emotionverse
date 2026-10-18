@@ -1,138 +1,107 @@
+"""EmotionVerse backend: FastAPI REST + Socket.IO, models loaded once at startup."""
+from contextlib import asynccontextmanager
+
+import socketio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import socketio
 
-from logging_setup import setup_logging, get_logger
-
-from models.text_model import load_text_model, predict_text_emotion
-from models.face_model import load_face_model, predict_face_emotion
-from models.voice_model import load_voice_model, predict_voice_emotion
+from config import settings
 from fusion import fuse
+from logging_setup import get_logger, setup_logging
+from registry import ModelRegistry
 
 setup_logging()
 log = get_logger("main")
 
-app = FastAPI(title="EmotionVerse", version="1.0")
+registry = ModelRegistry()
 
-# Socket.IO setup
-sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
-socket_app = socketio.ASGIApp(sio, app)
 
-# Load models on startup
-@app.on_event("startup")
-async def startup():
-    load_text_model()
-    load_face_model()
-    load_voice_model()
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    registry.load_all()  # blocking is fine: nothing is served until models are ready
+    yield
+    log.info("shutting down")
 
-# CORS (open for now, restrict later in production)
+
+app = FastAPI(title="EmotionVerse", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors.allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Health check
+sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins=settings.cors.allowed_origins)
+socket_app = socketio.ASGIApp(sio, app)
+
+
 @app.get("/")
-def health_check():
-    return {
-        "project": "EmotionVerse",
-        "status": "running",
-        "phase": "fusion engine active"
-    }
+def root():
+    return {"project": "EmotionVerse", "status": "running"}
+
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return registry.health()
 
 
-# ---------------- REST APIs ---------------- #
+async def analyze_payload(data: dict) -> dict:
+    """Run whichever modalities are present. One modality failing never affects the others."""
+    timeout = settings.runtime.predict_timeout_s
+    text, image, audio = data.get("text", ""), data.get("image", ""), data.get("audio", [])
+    sample_rate = data.get("sample_rate", 16000)
+
+    out = {"text": {}, "face": {}, "voice": {}}
+    if text:
+        out["text"] = await registry.predict("text", text, timeout=timeout)
+    if image:
+        out["face"] = await registry.predict("face", image, timeout=timeout)
+    if audio:
+        out["voice"] = await registry.predict("voice", audio, sample_rate, timeout=timeout)
+    out["fused"] = fuse(out)
+    return out
+
+
+# ---------------- REST ---------------- #
 
 @app.post("/predict/text")
-def predict_text(payload: dict):
-    text = payload.get("text", "")
-    if not text:
-        return {"error": "no text provided"}
-    return predict_text_emotion(text)
+async def predict_text(payload: dict):
+    return await registry.predict("text", payload.get("text", ""), timeout=settings.runtime.predict_timeout_s)
 
 
 @app.post("/predict/face")
-def predict_face(payload: dict):
-    image_b64 = payload.get("image", "")
-    if not image_b64:
-        return {"error": "no image provided"}
-    return predict_face_emotion(image_b64)
+async def predict_face(payload: dict):
+    return await registry.predict("face", payload.get("image", ""), timeout=settings.runtime.predict_timeout_s)
 
 
 @app.post("/predict/voice")
-def predict_voice(payload: dict):
-    audio_data = payload.get("audio", [])
-    sample_rate = payload.get("sample_rate", 16000)
-    if not audio_data:
-        return {"error": "no audio provided"}
-    return predict_voice_emotion(audio_data, sample_rate)
+async def predict_voice(payload: dict):
+    return await registry.predict("voice", payload.get("audio", []), payload.get("sample_rate", 16000),
+                                  timeout=settings.runtime.predict_timeout_s)
 
 
 @app.post("/predict/fusion")
-def predict_fusion(payload: dict):
-    text = payload.get("text", "")
-    image_b64 = payload.get("image", "")
-    audio_data = payload.get("audio", [])
-    sample_rate = payload.get("sample_rate", 16000)
-
-    text_result  = predict_text_emotion(text) if text else {}
-    face_result  = predict_face_emotion(image_b64) if image_b64 else {}
-    voice_result = predict_voice_emotion(audio_data, sample_rate) if audio_data else {}
-
-    fused = fuse({"face": face_result, "voice": voice_result, "text": text_result})
-
-    return {
-        "text": text_result,
-        "face": face_result,
-        "voice": voice_result,
-        "fused": fused
-    }
+async def predict_fusion(payload: dict):
+    return await analyze_payload(payload)
 
 
-# ---------------- SOCKET EVENTS ---------------- #
+# ---------------- Socket.IO ---------------- #
 
 @sio.event
 async def connect(sid, environ):
+    log.info("client connected", extra={"sid": sid})
     await sio.emit("server_message", {"msg": "Connected to EmotionVerse"}, to=sid)
 
 
 @sio.event
 async def disconnect(sid):
-    pass
+    log.info("client disconnected", extra={"sid": sid})
 
 
 @sio.event
 async def analyze(sid, data):
     try:
-        text = data.get("text", "")
-        image_b64 = data.get("image", "")
-        audio_data = data.get("audio", [])
-        sample_rate = data.get("sample_rate", 16000)
-
-        # Run models
-        text_result  = predict_text_emotion(text) if text else {}
-        face_result  = predict_face_emotion(image_b64) if image_b64 else {}
-        voice_result = predict_voice_emotion(audio_data, sample_rate) if audio_data else {}
-
-        # Fusion
-        fused = fuse({"face": face_result, "voice": voice_result, "text": text_result})
-
-        # Send result back
-        await sio.emit("emotion_result", {
-            "text": text_result,
-            "face": face_result,
-            "voice": voice_result,
-            "fused": fused
-        }, to=sid)
-
-    except Exception as e:
-        log.exception("analyze failed")
-        await sio.emit("emotion_result", {
-            "error": str(e)
-        }, to=sid)
+        await sio.emit("emotion_result", await analyze_payload(data or {}), to=sid)
+    except Exception:  # noqa: BLE001 - keep the connection alive no matter what
+        log.exception("analyze failed", extra={"sid": sid})
+        await sio.emit("emotion_result", {"error": "internal error"}, to=sid)
