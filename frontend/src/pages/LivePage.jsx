@@ -31,6 +31,8 @@ export default function LivePage() {
   const lastDominant = useRef(null);
 
   const onResult = useCallback((data) => {
+    if (!data || data.dropped) return; // throttled/busy: keep showing the last real reading
+    if (data.error && !data.fused) { setServerError(data.error); return; }
     setServerError(null);
     setLast(data);
     if (data.mismatch && data.mismatch.detected) {

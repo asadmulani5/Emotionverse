@@ -1,7 +1,7 @@
 import { canonical, pct, titleCase } from '../theme/emotions';
 
 export function describePair(p) {
-  return `${p.a} shows ${titleCase(canonical(p.a_emotion))} (${pct(p.a_confidence)}) while ${p.b} shows ${titleCase(canonical(p.b_emotion))} (${pct(p.b_confidence)})`;
+  return `${titleCase(p.a)} shows ${titleCase(canonical(p.a_emotion))} (${pct(p.a_confidence)}) while ${titleCase(p.b)} shows ${titleCase(canonical(p.b_emotion))} (${pct(p.b_confidence)})`;
 }
 
 /** Shows the current mismatch (if any) and the last few that happened this session. */
