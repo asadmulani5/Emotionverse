@@ -39,3 +39,9 @@ async def test_fusion_survives_all_models_down(client):
     r = await client.post("/predict/fusion", json={"text": "hello"})
     assert r.status_code == 200
     assert r.json()["fused"]["dominant"] is None
+
+
+async def test_sessions_routes_503_when_db_disabled(client):
+    assert (await client.get("/sessions")).status_code == 503
+    assert (await client.get("/sessions/abc")).status_code == 503
+    assert (await client.get("/health")).json()["db"] == {"enabled": False, "connected": False}
