@@ -45,3 +45,20 @@ async def test_sessions_routes_503_when_db_disabled(client):
     assert (await client.get("/sessions")).status_code == 503
     assert (await client.get("/sessions/abc")).status_code == 503
     assert (await client.get("/health")).json()["db"] == {"enabled": False, "connected": False}
+
+
+async def test_session_detail_includes_summary(client, monkeypatch):
+    import mongomock
+    import db as dbmod
+    monkeypatch.setattr(dbmod.settings.db, "enabled", True)
+    d = dbmod.Database(client=mongomock.MongoClient())
+    monkeypatch.setattr(main, "database", d)
+    await d.create_session("abc")
+    d.db.results.insert_one({"session_id": "abc", "timestamp": dbmod.utcnow(),
+                             "fused": {"emotions": {"happy": 0.9, "neutral": 0.1}, "used": ["text"]},
+                             "mismatch": {"detected": True}})
+    body = (await client.get("/sessions/abc")).json()
+    assert body["summary"]["dominant"] == "happy"
+    assert body["summary"]["mismatch_count"] == 1
+    assert (await client.get("/sessions/nope")).status_code == 404
+    assert len((await client.get("/sessions")).json()["sessions"]) == 1
