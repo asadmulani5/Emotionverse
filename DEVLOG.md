@@ -41,5 +41,10 @@
 **Why:** The old UI mixed inline styles, hard-coded localhost, and silently swallowed failures; the user must always see what's wrong.
 **Key concept:** Stop-and-wait flow control: send the next frame only after the last result (or a timeout) so a slow server never builds a backlog. Reconnect state machine: 'unreachable' (never connected) vs 'reconnecting' (lost connection) - same retry loop, different message.
 
+## Task 22 — Consent / privacy screen
+**What changed:** New ConsentScreen modal shown on first load (state saved in localStorage via a safe wrapper). LivePage (camera, socket, analysis) is only mounted after the user accepts, so no camera access and no socket connection happen before consent. 'No thanks' shows a screen confirming nothing was captured. A 'Privacy & consent' button revokes consent. App.js now holds consent + theme toggle (system/light/dark); live logic moved to pages/LivePage.jsx. Text covers: estimates not feelings, self-use only (EU AI Act prohibits it in workplaces/schools), what is sent where, what is saved (scores only).
+**Why:** Emotion sensing is sensitive; consent must be informed and come before any capture.
+**Key concept:** Consent gating by mounting: instead of an if-check inside each feature, don't render the feature (and its effects) at all until consent - effects can't run if the component never mounts.
+
 ## Blocked
 (none yet)
