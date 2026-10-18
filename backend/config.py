@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, field_validator
 class FusionCfg(BaseModel):
     weights: dict = Field(default_factory=lambda: {"face": 0.4, "voice": 0.3, "text": 0.3})
     mismatch_threshold: float = 0.6
+    ignore_neutral: bool = True  # 'neutral vs happy' is not a strong disagreement
 
     @field_validator("mismatch_threshold")
     @classmethod
@@ -18,6 +19,12 @@ class FusionCfg(BaseModel):
         if not 0 <= v <= 1:
             raise ValueError("mismatch_threshold must be within 0..1")
         return v
+
+
+class SummaryCfg(BaseModel):
+    spike_min: float = 0.6     # fused score a non-neutral emotion must reach
+    spike_delta: float = 0.3   # ...and exceed its session average by this much
+    max_spikes: int = 10
 
 
 class LimitsCfg(BaseModel):
@@ -57,6 +64,7 @@ class Settings(BaseModel):
     runtime: RuntimeCfg = RuntimeCfg()
     db: DbCfg = DbCfg()
     cors: CorsCfg = CorsCfg()
+    summary: SummaryCfg = SummaryCfg()
 
 
 def load_settings(path: str | None = None) -> Settings:

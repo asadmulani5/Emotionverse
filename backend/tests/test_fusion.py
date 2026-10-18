@@ -56,3 +56,44 @@ def test_contributions_add_up_to_final():
     for e in CANONICAL:
         assert out["emotions"][e] == pytest.approx(
             sum(c[e] for c in out["contributions"].values()))
+
+
+from fusion import detect_mismatch
+
+
+def test_mismatch_detected_when_confident_and_different():
+    out = detect_mismatch({"face": res(happy=0.9, sad=0.1), "text": res(sadness=0.8, joy=0.2)}, 0.6)
+    assert out["detected"] is True
+    p = out["pairs"][0]
+    assert (p["a"], p["b"], p["a_emotion"], p["b_emotion"]) == ("face", "text", "happy", "sad")
+
+
+def test_no_mismatch_when_agree():
+    assert not detect_mismatch({"face": res(happy=1), "text": res(joy=1)}, 0.6)["detected"]
+
+
+def test_no_mismatch_below_threshold():
+    r = {"face": res(happy=0.5, sad=0.5 - 1e-9, fear=1e-9), "text": res(sadness=0.9, joy=0.1)}
+    assert not detect_mismatch(r, 0.6)["detected"]
+
+
+def test_threshold_is_configurable():
+    r = {"face": res(happy=0.7, sad=0.3), "voice": res(angry=0.7, sad=0.3)}
+    assert not detect_mismatch(r, 0.8)["detected"]
+    assert detect_mismatch(r, 0.6)["detected"]
+
+
+def test_neutral_ignored_by_default_but_can_count():
+    r = {"face": res(neutral=0.9, happy=0.1), "text": res(sadness=0.9, joy=0.1)}
+    assert not detect_mismatch(r, 0.6)["detected"]
+    assert detect_mismatch(r, 0.6, ignore_neutral=False)["detected"]
+
+
+def test_mismatch_ignores_failed_or_single_modalities():
+    assert not detect_mismatch({"face": res(happy=1), "voice": {"error": "x"}}, 0.6)["detected"]
+    assert not detect_mismatch({}, 0.6)["detected"]
+
+
+def test_three_way_reports_each_disagreeing_pair():
+    r = {"face": res(happy=1), "voice": res(angry=1), "text": res(sadness=1)}
+    assert len(detect_mismatch(r, 0.6)["pairs"]) == 3

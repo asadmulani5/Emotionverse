@@ -11,6 +11,7 @@ fusion:
   # Mismatch alert: fires when two modalities' dominant emotions differ and
   # both are at least this confident (0..1).
   mismatch_threshold: 0.6
+  ignore_neutral: true
 
 limits:
   max_image_bytes: 1500000       # decoded JPEG size
@@ -33,3 +34,8 @@ db:
 
 cors:
   allowed_origins: ["http://localhost:3000"]
+
+summary:
+  spike_min: 0.6      # a non-neutral emotion must reach this fused score...
+  spike_delta: 0.3    # ...and exceed its session average by this much
+  max_spikes: 10

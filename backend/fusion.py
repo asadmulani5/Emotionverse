@@ -54,3 +54,28 @@ def fuse(results: Dict[str, Optional[dict]], weights: Optional[Dict[str, float]]
         "weights": eff,
         "contributions": contributions,
     }
+
+
+def detect_mismatch(results: Dict[str, Optional[dict]], threshold: Optional[float] = None,
+                    ignore_neutral: Optional[bool] = None) -> dict:
+    """Flag modalities that strongly disagree (different dominant emotion, both confident)."""
+    threshold = settings.fusion.mismatch_threshold if threshold is None else threshold
+    ignore_neutral = settings.fusion.ignore_neutral if ignore_neutral is None else ignore_neutral
+    tops = {}
+    for m, r in results.items():
+        dist = _usable(r)
+        if dist:
+            emo = max(dist, key=dist.get)
+            tops[m] = (emo, dist[emo])
+    pairs = []
+    names = sorted(tops)
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            (ea, ca), (eb, cb) = tops[a], tops[b]
+            if ea == eb or ca < threshold or cb < threshold:
+                continue
+            if ignore_neutral and "neutral" in (ea, eb):
+                continue
+            pairs.append({"a": a, "b": b, "a_emotion": ea, "b_emotion": eb,
+                          "a_confidence": round(ca, 3), "b_confidence": round(cb, 3)})
+    return {"detected": bool(pairs), "pairs": pairs, "threshold": threshold}
