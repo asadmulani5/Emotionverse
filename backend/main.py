@@ -11,9 +11,10 @@ from fastapi.responses import JSONResponse
 
 from config import settings
 from db import Database
-from fusion import fuse
+from fusion import detect_mismatch, fuse
 from logging_setup import get_logger, setup_logging
 from registry import ModelRegistry
+from summary import summarize
 from validation import InputError, validate_audio, validate_image, validate_payload, validate_text
 
 setup_logging()
@@ -71,6 +72,7 @@ async def analyze_payload(clean: dict) -> dict:
     results = await asyncio.gather(*jobs.values())
     out = {"text": {}, "face": {}, "voice": {}, **dict(zip(jobs, results))}
     out["fused"] = fuse(out)
+    out["mismatch"] = detect_mismatch(out)
     return out
 
 
@@ -91,6 +93,7 @@ def get_session(session_id: str):
     found = database.get_session(session_id)
     if not found:
         raise HTTPException(404, "session not found")
+    found["summary"] = summarize(found["results"])
     return found
 
 

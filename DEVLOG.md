@@ -31,5 +31,10 @@
 **Why:** Replay and summaries need history; privacy and reliability need it to be optional and non-blocking.
 **Key concept:** Write-behind queue: the request path only appends to an in-memory queue (O(1)); a separate worker batches inserts. Trade-off: if the process dies, up to ~2 s of results are lost — acceptable for this use. Compound index (session_id, timestamp) serves 'all results for a session in time order' without a sort.
 
+## Tasks 18, 19 (backend), 20 (backend) — Mismatch, explainability data, session summary
+**What changed:** fusion.detect_mismatch(): for each pair of modalities, flags when dominant emotions differ and both confidences >= config threshold (neutral ignored by default). analyze results now carry fused.contributions (each modality's weighted share per emotion — the explainability data) and a 'mismatch' block. New backend/summary.py computes dominant expression (mean fused distribution), duration, spikes (non-neutral emotion >= spike_min and >= spike_delta above its session mean, merged when consecutive, with timestamps), mismatch count and modalities used; returned as 'summary' by GET /sessions/{id}.
+**Why:** These are the product's differentiators: instead of one opaque label, show *why* and when signals disagree.
+**Key concept:** Explainability by construction: late fusion is a weighted sum, so each modality's contribution is exactly weight x its score - no post-hoc approximation needed. Spike detection compares a point to its own session baseline rather than an absolute threshold.
+
 ## Blocked
 (none yet)
