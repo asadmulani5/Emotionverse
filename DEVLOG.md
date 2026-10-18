@@ -59,3 +59,10 @@
 - Why: Makes the fusion explainable instead of a black-box number, and treats disagreement between signals as a useful insight.
 - Fixes: throttled/busy frames no longer wipe the panels; modality names capitalized.
 - Key concept: fused score per emotion = sum over inputs of (re-balanced weight x that input's score). Each input's share of the top emotion is its term divided by the total.
+
+## Sessions page: summary + replay
+- What: Live/Sessions tabs. Sessions lists saved sessions (empty ones hidden), and opening one shows a summary (dominant expression, average mix, spikes, mismatch count) and a replay with play/pause, slider and 1x/2x/4x speed.
+- Why: Turns stored data into something useful: you can look back at how your detected expressions changed over a session.
+- Local dev DB: docker run -d --name emotionverse-mongo -p 27017:27017 -v emotionverse-mongo-data:/data/db --restart unless-stopped mongo:7
+- Key concept: replay waits the real time gap between saved readings divided by speed, capped at 2s so long pauses don't stall playback.
+- Found: voice model's classifier head isn't loaded from the checkpoint (random weights). Tracked as a separate fix.
