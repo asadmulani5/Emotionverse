@@ -26,5 +26,10 @@
 **Why:** A bad frame or giant payload shouldn't crash the server or pile up work; real-time video should favour fresh frames over complete ones.
 **Key concept:** Backpressure: if the consumer is slower than the producer, drop the oldest/newest work rather than queue it, or latency grows without bound. Validate at the boundary, then trust internal code.
 
+## Tasks 9–12 — MongoDB persistence
+**What changed:** New backend/db.py. Connects with MONGO_URI from .env (falls back to local docker mongo URL); lazy client, so startup never blocks and the app runs if Mongo is down/unset. Each socket connection gets a uuid session_id and a doc in 'sessions' (created/ended in background tasks). Every result is queued with save_result() and a background flusher inserts batches (batch_size / flush_interval in config) into 'results' — the live stream never waits on the DB, a full queue drops rather than blocks. Only scores are stored, never images/audio/typed text. Indexes: results(session_id, timestamp), sessions.session_id unique, sessions.started_at. Routes: GET /sessions, GET /sessions/{id} (503 if DB down, 404 if missing). /health includes db status. Added .env.example (placeholders only) and python-dotenv.
+**Why:** Replay and summaries need history; privacy and reliability need it to be optional and non-blocking.
+**Key concept:** Write-behind queue: the request path only appends to an in-memory queue (O(1)); a separate worker batches inserts. Trade-off: if the process dies, up to ~2 s of results are lost — acceptable for this use. Compound index (session_id, timestamp) serves 'all results for a session in time order' without a sort.
+
 ## Blocked
 (none yet)

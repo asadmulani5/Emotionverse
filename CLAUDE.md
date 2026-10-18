@@ -39,7 +39,8 @@ Legend: [x] done, [ ] todo, [!] blocked (see DEVLOG "Blocked")
 - [x] 2,4,5 registry, isolation, /health, RAM logging
 - [x] 3,6 input validation, timeouts, drop-when-busy
 - [ ] 7 Socket.IO disconnect handling + frontend reconnect UI
-- [ ] 9-13 MongoDB + past sessions UI
+- [x] 9-12 MongoDB (db.py, sessions/results, batching, indexes, REST)
+- [ ] 13 Frontend past-sessions page + replay
 - [x] 16 config file (backend/config.yaml, config.py); fusion.py rewritten + tests
 - [ ] 14,15,17 Harden (tests, UI errors, cleanup)
 - [ ] 18-22 Signature features
