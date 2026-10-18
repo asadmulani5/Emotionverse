@@ -47,7 +47,8 @@ Legend: [x] done, [ ] todo, [!] blocked (see DEVLOG "Blocked")
 - [x] 18 mismatch (backend), 19 contributions (backend), 20 summary (backend)
 - [x] 22 consent screen
 - [x] 21 toggles + mic capture
-- [ ] 18-20 Signature features UI (alerts, explain panel, summary view) (alerts, explain panel, summary view, toggles, consent)
+- [x] 18-19 Signature UI: mismatch alerts + explainability panel
+- [ ] 20 Summary view UI
 - [ ] 23-26 Throttle, Docker, CI, UI polish
 - [ ] 27 HF Spaces deploy (ASK user about HF PRO first)
 - [ ] 28 Vercel deploy

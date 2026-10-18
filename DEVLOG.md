@@ -53,3 +53,9 @@
 
 ## Blocked
 (none yet)
+
+## Mismatch alerts + explainability panel (UI)
+- What: MismatchAlert shows when two inputs confidently disagree (e.g. smiling face, sad text) plus recent history. ContributionPanel shows how much each input contributed to the top expression.
+- Why: Makes the fusion explainable instead of a black-box number, and treats disagreement between signals as a useful insight.
+- Fixes: throttled/busy frames no longer wipe the panels; modality names capitalized.
+- Key concept: fused score per emotion = sum over inputs of (re-balanced weight x that input's score). Each input's share of the top emotion is its term divided by the total.

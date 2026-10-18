@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ErrorBanner from '../components/ErrorBanner';
+import ContributionPanel from '../components/ContributionPanel';
 import ExpressionPanel from '../components/ExpressionPanel';
+import MismatchAlert, { describePair } from '../components/MismatchAlert';
 import MicCapture from '../components/MicCapture';
 import ModalityToggles from '../components/ModalityToggles';
 import StatusBar from '../components/StatusBar';
@@ -21,13 +23,22 @@ export default function LivePage() {
   const [submittedText, setSubmittedText] = useState('');
   const [history, setHistory] = useState([]);
   const [timeline, setTimeline] = useState([]);
+  const [last, setLast] = useState(null);
+  const [mismatches, setMismatches] = useState([]);
   const [cameraError, setCameraError] = useState(null);
   const [faceIssue, setFaceIssue] = useState(null);
   const [serverError, setServerError] = useState(null);
   const lastDominant = useRef(null);
 
   const onResult = useCallback((data) => {
+    if (!data || data.dropped) return; // throttled/busy: keep showing the last real reading
+    if (data.error && !data.fused) { setServerError(data.error); return; }
     setServerError(null);
+    setLast(data);
+    if (data.mismatch && data.mismatch.detected) {
+      const text = data.mismatch.pairs.map(describePair).join('; ');
+      setMismatches((m) => (m.length && m[m.length - 1].text === text ? m : [...m, { id: nextId++, time: new Date().toLocaleTimeString(), text }].slice(-5)));
+    }
     if (data.face && data.face.error) {
       setFaceIssue(/no face/i.test(data.face.error)
         ? 'No face detected. Check the lighting and that your face is in view.'
@@ -109,6 +120,8 @@ export default function LivePage() {
             <button className="btn" type="button" onClick={() => { setText(''); setSubmittedText(''); }}>Clear</button>
           </form>
         </section>
+        <MismatchAlert current={last && last.mismatch} recent={mismatches} />
+        <ContributionPanel result={last} />
         <Timeline entries={timeline} />
       </div>
     </>
