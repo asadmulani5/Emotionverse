@@ -16,5 +16,10 @@
 **Why:** Voice weight was hard-coded to 0 and voice labels didn't match the canonical set, so voice never counted. Hard-coded numbers also made tuning require code edits.
 **Key concept:** Late fusion = each model scores independently, then we take a weighted average of probability distributions. If a modality is missing we drop it and re-scale the remaining weights so the result is still a valid distribution.
 
+## Tasks 2, 4, 5 — Model registry, isolation, /health
+**What changed:** New backend/registry.py loads face/text/voice once at startup, each in its own try/except; failures mark that modality failed/disabled and the server still starts. Predictions run in a thread pool through predict(), which never raises and has a timeout. GET /health reports per-model status, RAM (MB) and uptime. main.py rewritten to use a lifespan handler and the registry; DISABLED_MODELS env var turns models off. Text input is now truncated to 512 tokens.
+**Why:** One broken model (missing weights, OOM, bad input) used to crash the whole request or startup. Small hosts also need the option to run with fewer models.
+**Key concept:** Graceful degradation: treat each model as an optional plugin. Wrap every call so errors become data ({error: ...}) instead of exceptions, and let fusion work with whatever is left.
+
 ## Blocked
 (none yet)
