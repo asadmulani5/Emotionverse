@@ -23,7 +23,7 @@ cd frontend && CI=true npm test -- --watchAll=false
 ```
 
 ## Folder map
-- backend/main.py — app, REST + Socket.IO events
+- backend/main.py — app, REST + Socket.IO events; backend/registry.py — model loading/isolation/health
 - backend/fusion.py — N-modality weighted fusion; backend/config.yaml + config.py — all tunables
 - backend/tests/ — pytest (run from backend/)
 - backend/models/{face,text,voice}_model.py — model loaders + predict
@@ -36,7 +36,8 @@ Legend: [x] done, [ ] todo, [!] blocked (see DEVLOG "Blocked")
 - [x] repo hygiene (.gitignore, PR template, gitleaks hook)
 - [x] 1 Audit: py3.12 env, removed deepface/tensorflow, CLAUDE.md, DEVLOG.md
 - [x] 8 structured logging
-- [ ] 2-7 Backend reliability
+- [x] 2,4,5 registry, isolation, /health, RAM logging
+- [ ] 3,6,7 Backend reliability (validation, timeouts/drop, disconnect)
 - [ ] 9-13 MongoDB + past sessions UI
 - [x] 16 config file (backend/config.yaml, config.py); fusion.py rewritten + tests
 - [ ] 14,15,17 Harden (tests, UI errors, cleanup)
