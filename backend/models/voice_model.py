@@ -9,7 +9,8 @@ def load_voice_model():
     _classifier = pipeline(
         task="audio-classification",
         model="ehcalabres/wav2vec2-lg-xlsr-en-speech-emotion-recognition",
-        top_k=None
+        top_k=None,
+        framework="pt"
     )
     print("[voice_model] Model loaded.")
 
