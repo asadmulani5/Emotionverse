@@ -40,7 +40,7 @@ Legend: [x] done, [ ] todo, [!] blocked (see DEVLOG "Blocked")
 - [x] 3,6 input validation, timeouts, drop-when-busy
 - [ ] 7 Socket.IO disconnect handling + frontend reconnect UI
 - [x] 9-12 MongoDB (db.py, sessions/results, batching, indexes, REST)
-- [ ] 13 Frontend past-sessions page + replay
+- [x] 13 Frontend past-sessions page + replay
 - [x] 16 config file (backend/config.yaml, config.py); fusion.py rewritten + tests
 - [x] 7 (frontend reconnect), 15 UI errors, 17 cleanup
 - [ ] 14 Tests (frontend smoke + remaining backend)
@@ -48,7 +48,7 @@ Legend: [x] done, [ ] todo, [!] blocked (see DEVLOG "Blocked")
 - [x] 22 consent screen
 - [x] 21 toggles + mic capture
 - [x] 18-19 Signature UI: mismatch alerts + explainability panel
-- [ ] 20 Summary view UI
+- [x] 20 Summary view UI
 - [ ] 23-26 Throttle, Docker, CI, UI polish
 - [ ] 27 HF Spaces deploy (ASK user about HF PRO first)
 - [ ] 28 Vercel deploy
