@@ -1,14 +1,16 @@
 """EmotionVerse backend: FastAPI REST + Socket.IO, models loaded once at startup."""
 import asyncio
 import time
+import uuid
 from contextlib import asynccontextmanager
 
 import socketio
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config import settings
+from db import Database
 from fusion import fuse
 from logging_setup import get_logger, setup_logging
 from registry import ModelRegistry
@@ -18,13 +20,16 @@ setup_logging()
 log = get_logger("main")
 
 registry = ModelRegistry()
+database = Database()
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     registry.load_all()  # blocking is fine: nothing is served until models are ready
+    await database.start()  # never raises; app runs without Mongo
     yield
     log.info("shutting down")
+    await database.stop()
 
 
 app = FastAPI(title="EmotionVerse", version="0.1.0", lifespan=lifespan)
@@ -50,7 +55,7 @@ def root():
 
 @app.get("/health")
 def health():
-    return registry.health()
+    return {**registry.health(), "db": database.status()}
 
 
 async def analyze_payload(clean: dict) -> dict:
@@ -67,6 +72,26 @@ async def analyze_payload(clean: dict) -> dict:
     out = {"text": {}, "face": {}, "voice": {}, **dict(zip(jobs, results))}
     out["fused"] = fuse(out)
     return out
+
+
+def _require_db():
+    if not database.enabled or database.db is None or not database.ping():
+        raise HTTPException(503, "database unavailable")
+
+
+@app.get("/sessions")
+def list_sessions(limit: int = Query(50, ge=1, le=200), skip: int = Query(0, ge=0)):
+    _require_db()
+    return {"sessions": database.list_sessions(limit, skip)}
+
+
+@app.get("/sessions/{session_id}")
+def get_session(session_id: str):
+    _require_db()
+    found = database.get_session(session_id)
+    if not found:
+        raise HTTPException(404, "session not found")
+    return found
 
 
 @app.exception_handler(InputError)
@@ -107,14 +132,18 @@ _busy = 0  # predictions in flight; frames arriving beyond the limit are dropped
 
 @sio.event
 async def connect(sid, environ):
-    _clients[sid] = {"last": 0.0}
+    session_id = uuid.uuid4().hex
+    _clients[sid] = {"last": 0.0, "session_id": session_id}
+    database.fire(database.create_session(session_id))
     log.info("client connected", extra={"sid": sid, "clients": len(_clients)})
-    await sio.emit("server_message", {"msg": "Connected to EmotionVerse"}, to=sid)
+    await sio.emit("server_message", {"msg": "Connected to EmotionVerse", "session_id": session_id}, to=sid)
 
 
 @sio.event
 async def disconnect(sid):
-    _clients.pop(sid, None)
+    client = _clients.pop(sid, None)
+    if client:
+        database.fire(database.end_session(client["session_id"]))
     log.info("client disconnected", extra={"sid": sid, "clients": len(_clients)})
 
 
@@ -139,7 +168,9 @@ async def analyze(sid, data):
     client["last"] = now
     _busy += 1
     try:
-        await sio.emit("emotion_result", await analyze_payload(clean), to=sid)
+        result = await analyze_payload(clean)
+        database.save_result(client["session_id"], result)  # queued; never blocks the stream
+        await sio.emit("emotion_result", result, to=sid)
     except Exception:  # noqa: BLE001 - keep the connection alive no matter what
         log.exception("analyze failed", extra={"sid": sid})
         await sio.emit("emotion_result", {"error": "internal error"}, to=sid)

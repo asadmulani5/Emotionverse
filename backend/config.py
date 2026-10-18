@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List
 
 import yaml
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -45,6 +46,11 @@ class CorsCfg(BaseModel):
     allowed_origins: List[str] = ["http://localhost:3000"]
 
 
+# .env at repo root or backend/ (both git-ignored); real env vars win
+for _p in (Path(__file__).parent.parent / ".env", Path(__file__).parent / ".env"):
+    load_dotenv(_p, override=False)
+
+
 class Settings(BaseModel):
     fusion: FusionCfg = FusionCfg()
     limits: LimitsCfg = LimitsCfg()
@@ -62,6 +68,8 @@ def load_settings(path: str | None = None) -> Settings:
     origins = os.getenv("CORS_ORIGINS")  # comma-separated, set on the platform
     if origins:
         settings.cors.allowed_origins = [o.strip() for o in origins.split(",") if o.strip()]
+    if os.getenv("EMOTIONVERSE_DB_ENABLED") in ("0", "false", "False"):
+        settings.db.enabled = False
     return settings
 
 
