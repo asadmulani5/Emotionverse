@@ -171,7 +171,10 @@ async def analyze(sid, data):
     client["last"] = now
     _busy += 1
     try:
+        t0 = time.monotonic()
         result = await analyze_payload(clean)
+        log.debug("analyzed", extra={"sid": sid, "used": result["fused"]["used"],
+                                   "ms": round((time.monotonic() - t0) * 1000)})
         database.save_result(client["session_id"], result)  # queued; never blocks the stream
         await sio.emit("emotion_result", result, to=sid)
     except Exception:  # noqa: BLE001 - keep the connection alive no matter what
