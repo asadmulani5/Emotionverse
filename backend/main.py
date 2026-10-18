@@ -2,10 +2,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import socketio
 
+from logging_setup import setup_logging, get_logger
+
 from models.text_model import load_text_model, predict_text_emotion
 from models.face_model import load_face_model, predict_face_emotion
 from models.voice_model import load_voice_model, predict_voice_emotion
 from fusion import weighted_fusion
+
+setup_logging()
+log = get_logger("main")
 
 app = FastAPI(title="EmotionVerse", version="1.0")
 
@@ -135,6 +140,7 @@ async def analyze(sid, data):
         }, to=sid)
 
     except Exception as e:
+        log.exception("analyze failed")
         await sio.emit("emotion_result", {
             "error": str(e)
         }, to=sid)

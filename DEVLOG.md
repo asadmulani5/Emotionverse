@@ -6,5 +6,10 @@
 **Key concept:** A `transformers` pipeline picks a backend (PyTorch or TensorFlow) by what's installed. Pinning `framework="pt"` and not installing TF makes startup deterministic. Also: pinned versions only work on Python versions that have wheels for them.
 **Verified:** server starts, all 3 models load, /predict/text and /predict/voice return results, frontend builds.
 
+## Task 8 — Structured logging
+**What changed:** New `backend/logging_setup.py` (JSON-lines formatter, `LOG_LEVEL` env). All `print` calls replaced by `logger.info/exception`.
+**Why:** Machine-parseable logs with fields (model name, session id, timings) are searchable in prod; prints are not.
+**Key concept:** Structured logging = log a fixed message plus key/value fields (`extra={...}`), emitted as JSON, instead of formatting data into a sentence.
+
 ## Blocked
 (none yet)

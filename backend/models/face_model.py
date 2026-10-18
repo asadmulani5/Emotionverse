@@ -5,18 +5,21 @@ import cv2
 from PIL import Image
 from transformers import pipeline
 
+from logging_setup import get_logger
+
+log = get_logger("face_model")
 _classifier = None
 
 def load_face_model():
     global _classifier
-    print("[face_model] Loading ViT face emotion model...")
+    log.info("loading model", extra={"model": "face"})
     _classifier = pipeline(
         task="image-classification",
         model="trpakov/vit-face-expression",
         top_k=None,
         framework="pt"
     )
-    print("[face_model] Model loaded.")
+    log.info("model loaded", extra={"model": "face"})
 
 _face_cascade = None
 

@@ -5,6 +5,9 @@ from transformers import pipeline
 
 # This variable holds the loaded model
 # None until load_text_model() is called
+from logging_setup import get_logger
+
+log = get_logger("text_model")
 _classifier = None
 
 def load_text_model():
@@ -14,14 +17,14 @@ def load_text_model():
     Loading takes ~10 seconds, inference takes ~50ms.
     """
     global _classifier
-    print("[text_model] Loading DistilBERT emotion model...")
+    log.info("loading model", extra={"model": "text"})
     _classifier = pipeline(
         task="text-classification",
         model="bhadresh-savani/distilbert-base-uncased-emotion",
         top_k=None,
         framework="pt"
     )
-    print("[text_model] Model loaded.")
+    log.info("model loaded", extra={"model": "text"})
 
 def predict_text_emotion(text: str) -> dict:
     """
