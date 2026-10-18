@@ -42,7 +42,8 @@ Legend: [x] done, [ ] todo, [!] blocked (see DEVLOG "Blocked")
 - [x] 9-12 MongoDB (db.py, sessions/results, batching, indexes, REST)
 - [ ] 13 Frontend past-sessions page + replay
 - [x] 16 config file (backend/config.yaml, config.py); fusion.py rewritten + tests
-- [ ] 14,15,17 Harden (tests, UI errors, cleanup)
+- [x] 7 (frontend reconnect), 15 UI errors, 17 cleanup
+- [ ] 14 Tests (frontend smoke + remaining backend)
 - [x] 18 mismatch (backend), 19 contributions (backend), 20 summary (backend)
 - [ ] 18-22 Signature features UI (alerts, explain panel, summary view, toggles, consent)
 - [ ] 23-26 Throttle, Docker, CI, UI polish

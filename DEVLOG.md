@@ -36,5 +36,10 @@
 **Why:** These are the product's differentiators: instead of one opaque label, show *why* and when signals disagree.
 **Key concept:** Explainability by construction: late fusion is a weighted sum, so each modality's contribution is exactly weight x its score - no post-hoc approximation needed. Spike detection compares a point to its own session baseline rather than an absolute threshold.
 
+## Tasks 7 (frontend), 15, 17, part of 26 — Frontend foundation
+**What changed:** Removed CRA boilerplate (logo, reportWebVitals, App.css, stale test, README, manifest icons, web-vitals dep). Rewrote the frontend: config.js (backend URL from REACT_APP_BACKEND_URL), hooks/useEmotionSocket (auto-reconnect with status connecting/connected/reconnecting/unreachable, stop-and-wait sending), WebcamCapture (releases camera when off, friendly denied/not-found messages), ExpressionPanel, Timeline, StatusBar, ErrorBanner, light/dark CSS variables. Messages for server down, reconnecting, camera denied, no face, server-rejected input. Wording is 'Detected expression', never 'you feel'. Render-only runtime.txt was already removed in the audit.
+**Why:** The old UI mixed inline styles, hard-coded localhost, and silently swallowed failures; the user must always see what's wrong.
+**Key concept:** Stop-and-wait flow control: send the next frame only after the last result (or a timeout) so a slow server never builds a backlog. Reconnect state machine: 'unreachable' (never connected) vs 'reconnecting' (lost connection) - same retry loop, different message.
+
 ## Blocked
 (none yet)
