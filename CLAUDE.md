@@ -57,4 +57,4 @@ Legend: [x] done, [ ] todo, [!] blocked (see DEVLOG "Blocked")
 
 ## Known issues
 - frontend/src/App.test.js is stale CRA boilerplate and fails; replaced in the tests task.
-- Frontend does not capture audio yet; voice fusion weight is 0 until wired.
+- Voice model: superb/wav2vec2-base-superb-er (neutral/happy/angry/sad, roughly 60-65% accurate, acted speech). Excited speech is often read as angry (both high arousal).
