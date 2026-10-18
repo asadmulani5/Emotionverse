@@ -34,7 +34,8 @@ cd frontend && CI=true npm test -- --watchAll=false
 Legend: [x] done, [ ] todo, [!] blocked (see DEVLOG "Blocked")
 - [x] repo hygiene (.gitignore, PR template, gitleaks hook)
 - [x] 1 Audit: py3.12 env, removed deepface/tensorflow, CLAUDE.md, DEVLOG.md
-- [ ] 2-8 Backend reliability
+- [x] 8 structured logging
+- [ ] 2-7 Backend reliability
 - [ ] 9-13 MongoDB + past sessions UI
 - [ ] 14-17 Harden (tests, UI errors, config, cleanup)
 - [ ] 18-22 Signature features
