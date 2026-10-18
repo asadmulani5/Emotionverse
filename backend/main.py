@@ -7,7 +7,7 @@ from logging_setup import setup_logging, get_logger
 from models.text_model import load_text_model, predict_text_emotion
 from models.face_model import load_face_model, predict_face_emotion
 from models.voice_model import load_voice_model, predict_voice_emotion
-from fusion import weighted_fusion
+from fusion import fuse
 
 setup_logging()
 log = get_logger("main")
@@ -85,11 +85,7 @@ def predict_fusion(payload: dict):
     face_result  = predict_face_emotion(image_b64) if image_b64 else {}
     voice_result = predict_voice_emotion(audio_data, sample_rate) if audio_data else {}
 
-    fused = weighted_fusion(
-        face_result.get("emotions", {}),
-        voice_result.get("emotions", {}),
-        text_result.get("emotions", {})
-    )
+    fused = fuse({"face": face_result, "voice": voice_result, "text": text_result})
 
     return {
         "text": text_result,
@@ -125,11 +121,7 @@ async def analyze(sid, data):
         voice_result = predict_voice_emotion(audio_data, sample_rate) if audio_data else {}
 
         # Fusion
-        fused = weighted_fusion(
-            face_result.get("emotions", {}),
-            voice_result.get("emotions", {}),
-            text_result.get("emotions", {})
-        )
+        fused = fuse({"face": face_result, "voice": voice_result, "text": text_result})
 
         # Send result back
         await sio.emit("emotion_result", {
