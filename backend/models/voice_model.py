@@ -1,18 +1,21 @@
 import numpy as np
 from transformers import pipeline
 
+from logging_setup import get_logger
+
+log = get_logger("voice_model")
 _classifier = None
 
 def load_voice_model():
     global _classifier
-    print("[voice_model] Loading wav2vec2 emotion model...")
+    log.info("loading model", extra={"model": "voice"})
     _classifier = pipeline(
         task="audio-classification",
         model="ehcalabres/wav2vec2-lg-xlsr-en-speech-emotion-recognition",
         top_k=None,
         framework="pt"
     )
-    print("[voice_model] Model loaded.")
+    log.info("model loaded", extra={"model": "voice"})
 
 def predict_voice_emotion(audio_data: list, sample_rate: int = 16000) -> dict:
     if _classifier is None:
