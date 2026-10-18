@@ -1,17 +1,32 @@
+# Python
 venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+.coverage
+
+# Secrets (never commit; only .env.example is tracked)
 .env
+.env.*
+*.env
+!.env.example
+
+# Model weights
 *.pt
 *.pth
 *.h5
 *.pkl
+
+# Node
+node_modules/
+
+# OS / editor / tool output
 .DS_Store
-node_modules/*.jpg
-*.jpeg
+.cursor/
+.vscode/
+graphify-out/
+.claude/settings.local.json
+
+# Test media
 *.jpg
 *.jpeg
-
-# Editor and tool output
-.cursor/
-graphify-out/
