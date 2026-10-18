@@ -114,3 +114,4 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .modal ul { padding-left: 20px; }
 .modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
 .footer { margin: 24px 0 8px; text-align: center; color: var(--muted); font-size: 0.8rem; }
+.status-row { display: flex; justify-content: flex-end; margin-bottom: 12px; }
