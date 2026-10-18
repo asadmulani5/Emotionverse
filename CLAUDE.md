@@ -24,7 +24,8 @@ cd frontend && CI=true npm test -- --watchAll=false
 
 ## Folder map
 - backend/main.py — app, REST + Socket.IO events
-- backend/fusion.py — weighted fusion
+- backend/fusion.py — N-modality weighted fusion; backend/config.yaml + config.py — all tunables
+- backend/tests/ — pytest (run from backend/)
 - backend/models/{face,text,voice}_model.py — model loaders + predict
 - backend/requirements*.txt
 - frontend/src/App.js, components/{WebcamCapture,EmotionDashboard}.jsx
@@ -37,7 +38,8 @@ Legend: [x] done, [ ] todo, [!] blocked (see DEVLOG "Blocked")
 - [x] 8 structured logging
 - [ ] 2-7 Backend reliability
 - [ ] 9-13 MongoDB + past sessions UI
-- [ ] 14-17 Harden (tests, UI errors, config, cleanup)
+- [x] 16 config file (backend/config.yaml, config.py); fusion.py rewritten + tests
+- [ ] 14,15,17 Harden (tests, UI errors, cleanup)
 - [ ] 18-22 Signature features
 - [ ] 23-26 Throttle, Docker, CI, UI polish
 - [ ] 27 HF Spaces deploy (ASK user about HF PRO first)

@@ -11,5 +11,10 @@
 **Why:** Machine-parseable logs with fields (model name, session id, timings) are searchable in prod; prints are not.
 **Key concept:** Structured logging = log a fixed message plus key/value fields (`extra={...}`), emitted as JSON, instead of formatting data into a sentence.
 
+## Task 16 (+ fusion rewrite) — Config file
+**What changed:** `backend/config.yaml` + typed loader `config.py` (pydantic). Fusion weights, mismatch threshold, input limits, timeouts, DB batching, CORS origins all live there. `fusion.py` rewritten: normalises each model's labels (joy→happy, fearful→fear, calm→neutral...), re-normalises weights over only the modalities that returned a result, and returns per-modality contributions. First unit tests added.
+**Why:** Voice weight was hard-coded to 0 and voice labels didn't match the canonical set, so voice never counted. Hard-coded numbers also made tuning require code edits.
+**Key concept:** Late fusion = each model scores independently, then we take a weighted average of probability distributions. If a modality is missing we drop it and re-scale the remaining weights so the result is still a valid distribution.
+
 ## Blocked
 (none yet)
