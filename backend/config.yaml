@@ -1,0 +1,35 @@
+# EmotionVerse settings. Override the file path with EMOTIONVERSE_CONFIG.
+# Secrets do NOT go here (use .env).
+
+fusion:
+  # Relative importance of each modality. Only enabled+available modalities
+  # are used, and their weights are re-normalised to sum to 1.
+  weights:
+    face: 0.4
+    voice: 0.3
+    text: 0.3
+  # Mismatch alert: fires when two modalities' dominant emotions differ and
+  # both are at least this confident (0..1).
+  mismatch_threshold: 0.6
+
+limits:
+  max_image_bytes: 1500000       # decoded JPEG size
+  max_audio_samples: 480000      # 30 s at 16 kHz
+  max_text_chars: 1000
+  min_audio_samples: 3200        # 0.2 s at 16 kHz
+  allowed_sample_rates: [8000, 16000, 22050, 44100, 48000]
+
+runtime:
+  predict_timeout_s: 5.0         # per-modality prediction timeout
+  max_concurrent_predictions: 1  # frames arriving while busy are dropped
+  min_frame_interval_ms: 500     # server-side throttle per connection
+
+db:
+  enabled: true
+  database: emotionverse
+  batch_size: 20
+  flush_interval_s: 2.0
+  server_selection_timeout_ms: 2000
+
+cors:
+  allowed_origins: ["http://localhost:3000"]
