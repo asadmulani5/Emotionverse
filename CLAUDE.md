@@ -37,7 +37,8 @@ Legend: [x] done, [ ] todo, [!] blocked (see DEVLOG "Blocked")
 - [x] 1 Audit: py3.12 env, removed deepface/tensorflow, CLAUDE.md, DEVLOG.md
 - [x] 8 structured logging
 - [x] 2,4,5 registry, isolation, /health, RAM logging
-- [ ] 3,6,7 Backend reliability (validation, timeouts/drop, disconnect)
+- [x] 3,6 input validation, timeouts, drop-when-busy
+- [ ] 7 Socket.IO disconnect handling + frontend reconnect UI
 - [ ] 9-13 MongoDB + past sessions UI
 - [x] 16 config file (backend/config.yaml, config.py); fusion.py rewritten + tests
 - [ ] 14,15,17 Harden (tests, UI errors, cleanup)

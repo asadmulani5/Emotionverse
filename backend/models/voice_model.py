@@ -22,7 +22,12 @@ def predict_voice_emotion(audio_data: list, sample_rate: int = 16000) -> dict:
         return {"error": "model not loaded"}
 
     try:
-        audio_array = np.array(audio_data, dtype=np.float32)
+        audio_array = np.asarray(audio_data, dtype=np.float32)
+        if sample_rate != 16000:  # model expects 16 kHz; cheap linear resample
+            n = int(len(audio_array) * 16000 / sample_rate)
+            audio_array = np.interp(np.linspace(0, len(audio_array) - 1, n),
+                                    np.arange(len(audio_array)), audio_array).astype(np.float32)
+            sample_rate = 16000
         raw = _classifier({"array": audio_array, "sampling_rate": sample_rate})
         emotions = {item["label"]: round(item["score"], 4) for item in raw}
         dominant = max(emotions, key=emotions.get)

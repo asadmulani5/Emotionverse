@@ -21,5 +21,10 @@
 **Why:** One broken model (missing weights, OOM, bad input) used to crash the whole request or startup. Small hosts also need the option to run with fewer models.
 **Key concept:** Graceful degradation: treat each model as an optional plugin. Wrap every call so errors become data ({error: ...}) instead of exceptions, and let fusion work with whatever is left.
 
+## Tasks 3, 6 — Input validation, throttling, drop-when-busy
+**What changed:** New backend/validation.py rejects empty/oversized/corrupt text, images (decode + dimension check), audio (length, NaN, sample rate, list or base64 float32). REST returns 422/413 JSON; Socket.IO emits {error, code}. Socket analyze now drops frames ({dropped: 'throttled'|'busy'}) instead of queueing: per-connection min interval and a global in-flight limit from config. Modalities run concurrently with a per-model timeout. Voice audio is resampled to 16 kHz. Socket.IO max payload capped at 3 MB.
+**Why:** A bad frame or giant payload shouldn't crash the server or pile up work; real-time video should favour fresh frames over complete ones.
+**Key concept:** Backpressure: if the consumer is slower than the producer, drop the oldest/newest work rather than queue it, or latency grows without bound. Validate at the boundary, then trust internal code.
+
 ## Blocked
 (none yet)
