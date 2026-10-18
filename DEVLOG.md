@@ -46,5 +46,10 @@
 **Why:** Emotion sensing is sensitive; consent must be informed and come before any capture.
 **Key concept:** Consent gating by mounting: instead of an if-check inside each feature, don't render the feature (and its effects) at all until consent - effects can't run if the component never mounts.
 
+## Task 21 — Face / voice / text toggles (+ microphone capture)
+**What changed:** ModalityToggles lets the user switch each input on/off. Off means the hardware is released (camera/mic tracks stopped) and nothing is sent. New MicCapture records a rolling 3 s window with Web Audio, skips silence, resamples to 16 kHz in the browser (utils/audio.js) and sends base64 float32 — voice was never wired into the frontend before. Friendly mic-denied/not-found messages. Backend logs per-request used modalities and latency at DEBUG.
+**Why:** Users should control exactly what is sensed, and voice fusion needs real audio.
+**Key concept:** Privacy by construction: a toggle that merely hides the UI isn't enough; the effect that owns the MediaStream is keyed on  so turning it off runs cleanup and stops the tracks. Resampling client-side cuts upload size ~3x.
+
 ## Blocked
 (none yet)

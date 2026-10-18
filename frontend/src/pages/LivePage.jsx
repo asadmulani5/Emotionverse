@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ErrorBanner from '../components/ErrorBanner';
 import ExpressionPanel from '../components/ExpressionPanel';
+import MicCapture from '../components/MicCapture';
+import ModalityToggles from '../components/ModalityToggles';
 import StatusBar from '../components/StatusBar';
 import Timeline from '../components/Timeline';
 import WebcamCapture from '../components/WebcamCapture';
@@ -12,6 +14,9 @@ let nextId = 1;
 
 export default function LivePage() {
   const camRef = useRef(null);
+  const micRef = useRef(null);
+  const [on, setOn] = useState({ face: true, voice: false, text: true });
+  const [micError, setMicError] = useState(null);
   const [text, setText] = useState('');
   const [submittedText, setSubmittedText] = useState('');
   const [history, setHistory] = useState([]);
@@ -46,21 +51,24 @@ export default function LivePage() {
   useEffect(() => {
     const id = setInterval(() => {
       const payload = {};
-      const frame = camRef.current && camRef.current.getFrame();
+      const frame = on.face && camRef.current && camRef.current.getFrame();
       if (frame) payload.image = frame;
-      if (submittedText) payload.text = submittedText;
+      const clip = on.voice && micRef.current && micRef.current.getAudio();
+      if (clip) Object.assign(payload, clip);
+      if (on.text && submittedText) payload.text = submittedText;
       if (Object.keys(payload).length) send(payload);
     }, MIN_SEND_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [send, submittedText]);
+  }, [send, submittedText, on]);
 
   const smoothed = useMemo(() => smooth(history), [history]);
 
   const banners = [];
   if (status === 'unreachable') banners.push({ id: 'srv', level: 'error', text: `Can't reach the EmotionVerse server at ${BACKEND}. Retrying automatically…` });
   if (status === 'reconnecting') banners.push({ id: 'rec', level: 'warn', text: 'Connection lost. Reconnecting…' });
-  if (cameraError) banners.push({ id: 'cam', level: 'error', text: cameraError });
-  if (faceIssue) banners.push({ id: 'face', level: 'warn', text: faceIssue });
+  if (on.face && cameraError) banners.push({ id: 'cam', level: 'error', text: cameraError });
+  if (on.voice && micError) banners.push({ id: 'mic', level: 'error', text: micError });
+  if (on.face && faceIssue) banners.push({ id: 'face', level: 'warn', text: faceIssue });
   if (serverError) banners.push({ id: 'err', level: 'warn', text: `Server could not analyse that input: ${serverError}` });
 
   return (
@@ -69,13 +77,18 @@ export default function LivePage() {
       <ErrorBanner messages={banners} />
 
       <div className="grid">
+        <section className="card full" aria-label="Inputs">
+          <h2>Inputs</h2>
+          <ModalityToggles value={on} onChange={(next) => { setOn(next); if (!next.voice) setMicError(null); if (!next.face) setCameraError(null); }} />
+          <MicCapture ref={micRef} enabled={on.voice} onError={(msg) => setMicError(msg)} onReady={() => setMicError(null)} />
+        </section>
         <section className="card" aria-label="Camera">
           <h2>Camera</h2>
-          <WebcamCapture ref={camRef} enabled onError={(msg) => setCameraError(msg)} onReady={() => setCameraError(null)} />
+          <WebcamCapture ref={camRef} enabled={on.face} onError={(msg) => setCameraError(msg)} onReady={() => setCameraError(null)} />
         </section>
         <ExpressionPanel smoothed={smoothed} />
         <section className="card full" aria-label="Text input">
-          <h2>Text (optional)</h2>
+          <h2>Text (optional){!on.text && ' (off)'}</h2>
           <form
             className="text-input"
             onSubmit={(e) => {
@@ -87,6 +100,7 @@ export default function LivePage() {
               type="text"
               value={text}
               maxLength={1000}
+              disabled={!on.text}
               placeholder="Type something to analyse its tone…"
               aria-label="Text to analyse"
               onChange={(e) => setText(e.target.value)}
