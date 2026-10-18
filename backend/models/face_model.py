@@ -13,7 +13,8 @@ def load_face_model():
     _classifier = pipeline(
         task="image-classification",
         model="trpakov/vit-face-expression",
-        top_k=None
+        top_k=None,
+        framework="pt"
     )
     print("[face_model] Model loaded.")
 

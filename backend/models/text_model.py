@@ -18,7 +18,8 @@ def load_text_model():
     _classifier = pipeline(
         task="text-classification",
         model="bhadresh-savani/distilbert-base-uncased-emotion",
-        top_k=None  # return ALL emotion scores, not just the top one
+        top_k=None,
+        framework="pt"
     )
     print("[text_model] Model loaded.")
 
