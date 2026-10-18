@@ -66,3 +66,10 @@
 - Local dev DB: docker run -d --name emotionverse-mongo -p 27017:27017 -v emotionverse-mongo-data:/data/db --restart unless-stopped mongo:7
 - Key concept: replay waits the real time gap between saved readings divided by speed, capped at 2s so long pauses don't stall playback.
 - Found: voice model's classifier head isn't loaded from the checkpoint (random weights). Tracked as a separate fix.
+
+## Fix voice model (random weights)
+- Problem: the old checkpoint loaded with a randomly initialised classifier head AND a random positional conv layer, so voice predictions were meaningless.
+- Cause 1: that checkpoint's head layer names didn't match the model class.
+- Cause 2: newer torch makes transformers name the positional conv weights parametrizations.weight.original0/1, while older checkpoints store weight_g/weight_v, so those weights silently failed to load.
+- Fix: switched to superb/wav2vec2-base-superb-er; load with the legacy weight_norm so names match; check_weights_loaded() raises if any critical weight is missing, so the registry disables voice instead of serving garbage; near-silent clips are rejected.
+- Key concept: "Some weights were newly initialized" means those layers are random. Always read model loading warnings; a model can run without errors and still be producing noise.
