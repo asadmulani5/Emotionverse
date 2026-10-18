@@ -1,40 +1,83 @@
-import { useEffect, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
-export default function WebcamCapture({ onFrame }) {
+const FRAME_W = 480;
+const FRAME_H = 360;
+
+export function cameraErrorMessage(err) {
+  switch (err && err.name) {
+    case 'NotAllowedError':
+    case 'SecurityError':
+      return 'Camera access was denied. Allow camera permission in your browser settings, or turn the face toggle off.';
+    case 'NotFoundError':
+    case 'OverconstrainedError':
+      return 'No camera was found on this device.';
+    case 'NotReadableError':
+      return 'The camera is in use by another application.';
+    default:
+      return 'Could not start the camera.';
+  }
+}
+
+/** Shows the camera preview when `enabled`; releases the camera when disabled. */
+const WebcamCapture = forwardRef(function WebcamCapture({ enabled, onError, onReady }, ref) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then((stream) => {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
+    if (!enabled) return undefined;
+    let stream;
+    let cancelled = false;
+    const video = videoRef.current;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      onError?.('This browser does not support camera access (HTTPS or localhost is required).');
+      return undefined;
+    }
+    navigator.mediaDevices
+      .getUserMedia({ video: { width: 640, height: 480 } })
+      .then((s) => {
+        if (cancelled) {
+          s.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        stream = s;
+        if (video) {
+          video.srcObject = s;
+          video.play().catch(() => {});
+        }
+        onReady?.();
       })
-      .catch((err) => console.error('Camera error:', err));
+      .catch((err) => onError?.(cameraErrorMessage(err), err));
+    return () => {
+      cancelled = true;
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+      if (video) video.srcObject = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled]);
 
-    const interval = setInterval(() => {
-      if (!videoRef.current || !canvasRef.current) return;
+  useImperativeHandle(ref, () => ({
+    // JPEG base64 of the current frame, or null if the camera isn't producing frames yet
+    getFrame() {
+      const video = videoRef.current;
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      canvas.width = 640;
-      canvas.height = 480;
-      ctx.drawImage(videoRef.current, 0, 0, 640, 480);
-      const b64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-      onFrame(b64);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [onFrame]);
+      if (!enabled || !video || !canvas || !video.videoWidth) return null;
+      canvas.width = FRAME_W;
+      canvas.height = FRAME_H;
+      canvas.getContext('2d').drawImage(video, 0, 0, FRAME_W, FRAME_H);
+      return canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+    },
+  }));
 
   return (
-    <div style={{ textAlign: 'center' }}>
-      <p style={{ color: '#9ca3af', marginBottom: '0.5rem' }}>Live Camera</p>
-      <video
-        ref={videoRef}
-        style={{ width: 320, height: 240, borderRadius: 8, background: '#1f1f1f' }}
-        muted
-      />
+    <div className="video-wrap">
+      {enabled ? (
+        <video ref={videoRef} muted playsInline aria-label="Live camera preview" />
+      ) : (
+        <div className="placeholder">Camera is off</div>
+      )}
       <canvas ref={canvasRef} style={{ display: 'none' }} />
     </div>
   );
-}
+});
+
+export default WebcamCapture;
