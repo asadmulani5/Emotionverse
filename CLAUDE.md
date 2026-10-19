@@ -53,7 +53,7 @@ Legend: [x] done, [ ] todo, [!] blocked (see DEVLOG "Blocked")
 - [ ] 26 UI polish
 - [ ] 27 HF Spaces deploy (ASK user about HF PRO first)
 - [ ] 28 Vercel deploy
-- [ ] 29 README
+- [x] 29 README
 - [ ] 30 Release v0.1.0
 
 ## Known issues
