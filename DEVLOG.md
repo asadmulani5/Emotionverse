@@ -84,3 +84,10 @@
 - What: .github/workflows/ci.yml runs three parallel jobs on every PR and push to main: backend tests (Python 3.12, CPU-only torch, Mongo service container), frontend tests + production build (Node 20), and a gitleaks secret scan of the full history.
 - Why: proves the project works on a clean machine, not just mine, and blocks broken code or leaked secrets from reaching main.
 - Key concepts: a service container runs Mongo next to the test job; caching pip/npm downloads makes later runs faster; concurrency cancels outdated runs when a new commit is pushed.
+
+## Docker + docker-compose
+- What: backend/Dockerfile (python:3.12-slim, CPU-only torch, non-root user, /health healthcheck, $PORT support), frontend/Dockerfile (multi-stage: Node builds, nginx serves), docker-compose.yml (mongo + backend + frontend, volumes for DB data and downloaded models).
+- Run: docker compose up --build, then open http://localhost:3000.
+- Found: a leftover 1.2 GB venv inside backend/ was being copied into the build context; excluded via .dockerignore.
+- Measured: backend uses about 1.25 GB RAM with all three models loaded, so it needs a host with more than 1 GB (Render free tier is 512 MB; Hugging Face Spaces has 16 GB).
+- Key concepts: layer caching (install dependencies before copying code so code changes don't reinstall torch), multi-stage builds (final frontend image has no Node, just static files), named volumes (data survives container restarts).
