@@ -73,3 +73,9 @@
 - Cause 2: newer torch makes transformers name the positional conv weights parametrizations.weight.original0/1, while older checkpoints store weight_g/weight_v, so those weights silently failed to load.
 - Fix: switched to superb/wav2vec2-base-superb-er; load with the legacy weight_norm so names match; check_weights_loaded() raises if any critical weight is missing, so the registry disables voice instead of serving garbage; near-silent clips are rejected.
 - Key concept: "Some weights were newly initialized" means those layers are random. Always read model loading warnings; a model can run without errors and still be producing noise.
+
+## Frontend tests
+- What: 18 Jest tests in 8 files: format, smoothing, audio and emotion-label helpers; mismatch sentence; SessionSummary rendering; ConsentScreen buttons; App flow (consent -> live -> sessions, remembered consent, revoking consent).
+- Why: there were no frontend tests, so CI would fail with "No tests found". Tests also guard the consent flow, which is the privacy promise of the app.
+- How: React Testing Library renders components in jsdom (a fake browser) and clicks buttons like a user. The Live and Sessions pages are stubbed with jest.mock in the App test because they need a webcam and a backend.
+- Run: cd frontend && CI=true npm test -- --watchAll=false

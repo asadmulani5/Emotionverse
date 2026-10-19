@@ -43,7 +43,7 @@ Legend: [x] done, [ ] todo, [!] blocked (see DEVLOG "Blocked")
 - [x] 13 Frontend past-sessions page + replay
 - [x] 16 config file (backend/config.yaml, config.py); fusion.py rewritten + tests
 - [x] 7 (frontend reconnect), 15 UI errors, 17 cleanup
-- [ ] 14 Tests (frontend smoke + remaining backend)
+- [x] 14 Tests (frontend: 18 tests across utils, components and app flow; backend: 77)
 - [x] 18 mismatch (backend), 19 contributions (backend), 20 summary (backend)
 - [x] 22 consent screen
 - [x] 21 toggles + mic capture
@@ -56,5 +56,4 @@ Legend: [x] done, [ ] todo, [!] blocked (see DEVLOG "Blocked")
 - [ ] 30 Release v0.1.0
 
 ## Known issues
-- frontend/src/App.test.js is stale CRA boilerplate and fails; replaced in the tests task.
 - Voice model: superb/wav2vec2-base-superb-er (neutral/happy/angry/sad, roughly 60-65% accurate, acted speech). Excited speech is often read as angry (both high arousal).
