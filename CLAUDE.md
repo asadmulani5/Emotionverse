@@ -49,7 +49,8 @@ Legend: [x] done, [ ] todo, [!] blocked (see DEVLOG "Blocked")
 - [x] 21 toggles + mic capture
 - [x] 18-19 Signature UI: mismatch alerts + explainability panel
 - [x] 20 Summary view UI
-- [ ] 23-26 Throttle, Docker, CI, UI polish
+- [x] 24 Docker + compose, 25 CI (required on main)
+- [ ] 26 UI polish
 - [ ] 27 HF Spaces deploy (ASK user about HF PRO first)
 - [ ] 28 Vercel deploy
 - [ ] 29 README
