@@ -79,3 +79,8 @@
 - Why: there were no frontend tests, so CI would fail with "No tests found". Tests also guard the consent flow, which is the privacy promise of the app.
 - How: React Testing Library renders components in jsdom (a fake browser) and clicks buttons like a user. The Live and Sessions pages are stubbed with jest.mock in the App test because they need a webcam and a backend.
 - Run: cd frontend && CI=true npm test -- --watchAll=false
+
+## GitHub Actions CI
+- What: .github/workflows/ci.yml runs three parallel jobs on every PR and push to main: backend tests (Python 3.12, CPU-only torch, Mongo service container), frontend tests + production build (Node 20), and a gitleaks secret scan of the full history.
+- Why: proves the project works on a clean machine, not just mine, and blocks broken code or leaked secrets from reaching main.
+- Key concepts: a service container runs Mongo next to the test job; caching pip/npm downloads makes later runs faster; concurrency cancels outdated runs when a new commit is pushed.
