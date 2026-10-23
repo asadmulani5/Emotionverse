@@ -6,7 +6,7 @@
 
 It is a personal self-reflection tool. It runs entirely on your own machine, and it stores only emotion scores, never images, audio or text.
 
-![EmotionVerse live view](docs/live.png)
+![EmotionVerse demo: live reading, explainability and session replay](docs/demo.gif)
 
 ## Features
 
