@@ -47,18 +47,54 @@ async def test_sessions_routes_503_when_db_disabled(client):
     assert (await client.get("/health")).json()["db"] == {"enabled": False, "connected": False}
 
 
-async def test_session_detail_includes_summary(client, monkeypatch):
+CID = "client-aaaaaaaaaaaaaaaa"
+OTHER = "client-bbbbbbbbbbbbbbbb"
+
+
+@pytest.fixture
+def mongo_db(monkeypatch):
     import mongomock
     import db as dbmod
     monkeypatch.setattr(dbmod.settings.db, "enabled", True)
     d = dbmod.Database(client=mongomock.MongoClient())
     monkeypatch.setattr(main, "database", d)
-    await d.create_session("abc")
+    return d, dbmod
+
+
+async def test_session_detail_includes_summary(client, mongo_db):
+    d, dbmod = mongo_db
+    await d.create_session("abc", {"client_id": CID})
     d.db.results.insert_one({"session_id": "abc", "timestamp": dbmod.utcnow(),
                              "fused": {"emotions": {"happy": 0.9, "neutral": 0.1}, "used": ["text"]},
                              "mismatch": {"detected": True}})
-    body = (await client.get("/sessions/abc")).json()
+    h = {"X-Client-Id": CID}
+    body = (await client.get("/sessions/abc", headers=h)).json()
     assert body["summary"]["dominant"] == "happy"
     assert body["summary"]["mismatch_count"] == 1
-    assert (await client.get("/sessions/nope")).status_code == 404
-    assert len((await client.get("/sessions")).json()["sessions"]) == 1
+    assert "client_id" not in body["session"]
+    assert (await client.get("/sessions/nope", headers=h)).status_code == 404
+    sessions = (await client.get("/sessions", headers=h)).json()["sessions"]
+    assert len(sessions) == 1 and "client_id" not in sessions[0]
+
+
+async def test_sessions_are_private_per_client(client, mongo_db):
+    d, _ = mongo_db
+    await d.create_session("mine", {"client_id": CID})
+    await d.create_session("theirs", {"client_id": OTHER})
+    h = {"X-Client-Id": CID}
+    ids = [s["session_id"] for s in (await client.get("/sessions", headers=h)).json()["sessions"]]
+    assert ids == ["mine"]
+    assert (await client.get("/sessions/theirs", headers=h)).status_code == 404
+
+
+@pytest.mark.parametrize("headers", [{}, {"X-Client-Id": "short"}, {"X-Client-Id": "bad id with spaces!!"}])
+async def test_sessions_require_valid_client_id(client, mongo_db, headers):
+    assert (await client.get("/sessions", headers=headers)).status_code == 400
+    assert (await client.get("/sessions/mine", headers=headers)).status_code == 400
+
+
+def test_valid_client_id():
+    assert main.valid_client_id(CID) == CID
+    assert main.valid_client_id(None) is None
+    assert main.valid_client_id("x" * 100) is None
+    assert main.valid_client_id("has spaces in it!!") is None
