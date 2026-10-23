@@ -1,9 +1,11 @@
+import { getClientId } from './clientId';
 import { BACKEND } from './config';
 
 async function getJson(path) {
   let res;
   try {
-    res = await fetch(`${BACKEND}${path}`);
+    // The private per-browser id: the server only returns this browser's sessions.
+    res = await fetch(`${BACKEND}${path}`, { headers: { 'X-Client-Id': getClientId() } });
   } catch {
     throw new Error(`Can't reach the server at ${BACKEND}.`);
   }

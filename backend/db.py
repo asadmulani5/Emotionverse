@@ -66,6 +66,7 @@ class Database:
             self.db.results.create_index([("session_id", 1), ("timestamp", 1)])
             self.db.sessions.create_index("session_id", unique=True)
             self.db.sessions.create_index([("started_at", -1)])
+            self.db.sessions.create_index([("client_id", 1), ("started_at", -1)])
             self.connected = True
         except Exception as exc:  # noqa: BLE001
             self._warn("index creation failed", exc)
@@ -194,12 +195,18 @@ class Database:
             return None
 
     # ---- queries (blocking; call from sync routes / executor) ----
-    def list_sessions(self, limit: int = 50, skip: int = 0) -> List[dict]:
-        cur = self.db.sessions.find({}, {"_id": 0}).sort("started_at", -1).skip(skip).limit(limit)
+    def list_sessions(self, limit: int = 50, skip: int = 0, client_id: Optional[str] = None) -> List[dict]:
+        query = {"client_id": client_id} if client_id else {}
+        cur = (self.db.sessions.find(query, {"_id": 0, "client_id": 0})
+               .sort("started_at", -1).skip(skip).limit(limit))
         return [_iso(d) for d in cur]
 
-    def get_session(self, session_id: str, max_results: int = 5000) -> Optional[dict]:
-        sess = self.db.sessions.find_one({"session_id": session_id}, {"_id": 0})
+    def get_session(self, session_id: str, max_results: int = 5000,
+                    client_id: Optional[str] = None) -> Optional[dict]:
+        query = {"session_id": session_id}
+        if client_id:
+            query["client_id"] = client_id
+        sess = self.db.sessions.find_one(query, {"_id": 0, "client_id": 0})
         if not sess:
             return None
         cur = self.db.results.find({"session_id": session_id}, {"_id": 0}).sort("timestamp", 1).limit(max_results)

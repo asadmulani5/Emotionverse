@@ -91,3 +91,10 @@
 - Found: a leftover 1.2 GB venv inside backend/ was being copied into the build context; excluded via .dockerignore.
 - Measured: backend uses about 1.25 GB RAM with all three models loaded, so it needs a host with more than 1 GB (Render free tier is 512 MB; Hugging Face Spaces has 16 GB).
 - Key concepts: layer caching (install dependencies before copying code so code changes don't reinstall torch), multi-stage builds (final frontend image has no Node, just static files), named volumes (data survives container restarts).
+
+## Per-browser session privacy
+- What: each browser creates a random private id (localStorage), sent on socket connect and as an X-Client-Id header for /sessions. Sessions are stored with it; others get 404; missing/invalid id gets 400. Connections without an id are analysed live but not stored.
+- Why: required before a public deployment, otherwise every visitor could see everyone's history.
+- Tested: 5 new backend tests, 3 frontend tests; manually verified a normal and an Incognito window can't see each other's sessions.
+- Limitation: privacy per browser, not authentication. Clearing browser data loses access.
+- Key concept: 404 instead of 403 avoids revealing that a session exists.

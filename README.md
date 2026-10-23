@@ -130,7 +130,7 @@ CI runs backend tests, frontend tests with a production build, and a gitleaks se
 - **For personal use only.** Do not use it to monitor employees, students or anyone who hasn't agreed. Emotion recognition in workplaces and education is prohibited under the EU AI Act.
 - **What is stored:** emotion scores and timestamps only. Frames, audio and text are analysed in memory and discarded.
 - **Hosted vs local:** running locally keeps everything on your machine. A hosted deployment sends inputs to its server.
-- **No user accounts yet:** anyone who can reach the backend can list saved sessions. Fine for local use; a public multi-user deployment would need authentication.
+- **Private per browser, not accounts:** each browser gets a random private id, and saved sessions are only shown to that id. It is not a login: clearing browser data loses access to past sessions, and anyone who obtained the id could read them.
 - **Model limits:** the voice model distinguishes only four classes, was trained on acted English speech and often reads excited speech as angry (both are high-energy). The text model is English only. Expression datasets carry demographic and cultural biases, and accuracy drops with poor lighting or unusual angles.
 
 ## Project structure
@@ -157,7 +157,7 @@ DEVLOG.md            What was built, why, and key concepts
 ## Roadmap
 
 - Hosted demo (frontend on Vercel, backend on Hugging Face Spaces)
-- User accounts so sessions are private per user
+- User accounts (sessions are currently private per browser)
 - UI polish and mobile layout
 - Session export (CSV/JSON)
 

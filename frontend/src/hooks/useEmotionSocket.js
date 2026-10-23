@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
+import { getClientId } from '../clientId';
 import { BACKEND, RESULT_TIMEOUT_MS } from '../config';
 
 /**
@@ -21,6 +22,7 @@ export default function useEmotionSocket({ onResult, onServerError } = {}) {
 
   useEffect(() => {
     const socket = io(BACKEND, {
+      auth: { client_id: getClientId() },
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,

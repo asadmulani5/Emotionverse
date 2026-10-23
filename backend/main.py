@@ -1,11 +1,12 @@
 """EmotionVerse backend: FastAPI REST + Socket.IO, models loaded once at startup."""
 import asyncio
+import re
 import time
 import uuid
 from contextlib import asynccontextmanager
 
 import socketio
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -81,16 +82,35 @@ def _require_db():
         raise HTTPException(503, "database unavailable")
 
 
+# Each browser sends a random private id. Sessions are stored with it and only
+# returned to the same id, so visitors of a hosted demo can't see each other's history.
+CLIENT_ID_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
+
+
+def valid_client_id(value):
+    return value if isinstance(value, str) and CLIENT_ID_RE.fullmatch(value) else None
+
+
+def _require_client(value):
+    cid = valid_client_id(value)
+    if cid is None:
+        raise HTTPException(400, "missing or invalid X-Client-Id header")
+    return cid
+
+
 @app.get("/sessions")
-def list_sessions(limit: int = Query(50, ge=1, le=200), skip: int = Query(0, ge=0)):
+def list_sessions(limit: int = Query(50, ge=1, le=200), skip: int = Query(0, ge=0),
+                  x_client_id: str | None = Header(None)):
     _require_db()
-    return {"sessions": database.list_sessions(limit, skip)}
+    cid = _require_client(x_client_id)
+    return {"sessions": database.list_sessions(limit, skip, client_id=cid)}
 
 
 @app.get("/sessions/{session_id}")
-def get_session(session_id: str):
+def get_session(session_id: str, x_client_id: str | None = Header(None)):
     _require_db()
-    found = database.get_session(session_id)
+    cid = _require_client(x_client_id)
+    found = database.get_session(session_id, client_id=cid)
     if not found:
         raise HTTPException(404, "session not found")
     found["summary"] = summarize(found["results"])
@@ -134,10 +154,12 @@ _busy = 0  # predictions in flight; frames arriving beyond the limit are dropped
 
 
 @sio.event
-async def connect(sid, environ):
+async def connect(sid, environ, auth=None):
     session_id = uuid.uuid4().hex
-    _clients[sid] = {"last": 0.0, "session_id": session_id}
-    database.fire(database.create_session(session_id))
+    client_id = valid_client_id(auth.get("client_id") if isinstance(auth, dict) else None)
+    _clients[sid] = {"last": 0.0, "session_id": session_id, "client_id": client_id}
+    if client_id:  # without a client id nothing is persisted (no one could retrieve it)
+        database.fire(database.create_session(session_id, {"client_id": client_id}))
     log.info("client connected", extra={"sid": sid, "clients": len(_clients)})
     await sio.emit("server_message", {"msg": "Connected to EmotionVerse", "session_id": session_id}, to=sid)
 
@@ -145,7 +167,7 @@ async def connect(sid, environ):
 @sio.event
 async def disconnect(sid):
     client = _clients.pop(sid, None)
-    if client:
+    if client and client["client_id"]:
         database.fire(database.end_session(client["session_id"]))
     log.info("client disconnected", extra={"sid": sid, "clients": len(_clients)})
 
@@ -175,7 +197,8 @@ async def analyze(sid, data):
         result = await analyze_payload(clean)
         log.debug("analyzed", extra={"sid": sid, "used": result["fused"]["used"],
                                    "ms": round((time.monotonic() - t0) * 1000)})
-        database.save_result(client["session_id"], result)  # queued; never blocks the stream
+        if client["client_id"]:  # anonymous connections are analysed but not stored
+            database.save_result(client["session_id"], result)  # queued; never blocks the stream
         await sio.emit("emotion_result", result, to=sid)
     except Exception:  # noqa: BLE001 - keep the connection alive no matter what
         log.exception("analyze failed", extra={"sid": sid})
